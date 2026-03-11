@@ -1,0 +1,30 @@
+# Leonardo Stuani Godoi
+
+### Verbo GET – listar todos
+GET http://localhost:8000/produto/
+
+### Verbo GET – listar um
+GET http://localhost:8000/produto/5
+
+### Verbo POST – adicionar
+POST http://127.0.0.1:8000/produto/
+Content-Type: application/json
+
+{
+    "nome": "Leonardo Stuani Godoi",
+    "descricao": "farinha",
+    "valor_unitario": 2
+}
+
+### Verbo PUT – atualizar
+PUT http://127.0.0.1:8000/produto/5
+Content-Type: application/json
+
+{
+    "nome": "Leonardo Stuani Godoi",
+    "descricao": "farinha",
+    "valor_unitario": 2
+}
+
+### Verbo DELETE – excluir
+DELETE http://127.0.0.1:8000/produto/8
