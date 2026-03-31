@@ -7,28 +7,80 @@ from domain.schemas.ProdutoSchema import (
     ProdutoUpdate,
     ProdutoResponse
 )
+from domain.schemas.AuthSchema import FuncionarioAuth
 
 from infra.orm.ProdutoModel import ProdutoDB
 from infra.database import get_db
+from infra.dependencies import get_current_active_user, require_group
 
 router = APIRouter()
 
 
-@router.get("/produto/", response_model=List[ProdutoResponse], tags=["Produto"])
-async def get_produtos(db: Session = Depends(get_db)):
+@router.get(
+    "/produto/publico",
+    tags=["Produto"],
+    summary="Listar produtos - rota pública - sem id e valor"
+)
+async def get_produtos_publicos(db: Session = Depends(get_db)):
+    try:
+        produtos = db.query(ProdutoDB).all()
+
+        return [
+            {
+                "nome": produto.nome,
+                "descricao": produto.descricao,
+                "foto": produto.foto
+            }
+            for produto in produtos
+        ]
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get(
+    "/produto/",
+    response_model=List[ProdutoResponse],
+    tags=["Produto"],
+    summary="Listar todos os produtos - protegida"
+)
+async def get_produtos(
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(get_current_active_user)
+):
     try:
         produtos = db.query(ProdutoDB).all()
         return produtos
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
-@router.get("/produto/{id_produto}", response_model=ProdutoResponse, tags=["Produto"])
-async def get_produto(id_produto: int, db: Session = Depends(get_db)):
-    produto = db.query(ProdutoDB).filter(ProdutoDB.id_produto == id_produto).first()
+@router.get(
+    "/produto/{id_produto}",
+    response_model=ProdutoResponse,
+    tags=["Produto"],
+    summary="Buscar produto por ID - protegida"
+)
+async def get_produto(
+    id_produto: int,
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(get_current_active_user)
+):
+    produto = db.query(ProdutoDB).filter(
+        ProdutoDB.id_produto == id_produto
+    ).first()
 
     if not produto:
-        raise HTTPException(status_code=404, detail="Produto não encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Produto não encontrado"
+        )
 
     return produto
 
@@ -37,9 +89,14 @@ async def get_produto(id_produto: int, db: Session = Depends(get_db)):
     "/produto/",
     response_model=ProdutoResponse,
     status_code=status.HTTP_201_CREATED,
-    tags=["Produto"]
+    tags=["Produto"],
+    summary="Criar produto - grupo 1"
 )
-async def post_produto(produto_data: ProdutoCreate, db: Session = Depends(get_db)):
+async def post_produto(
+    produto_data: ProdutoCreate,
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(require_group([1]))
+):
     try:
         novo_produto = ProdutoDB(
             nome=produto_data.nome,
@@ -56,16 +113,34 @@ async def post_produto(produto_data: ProdutoCreate, db: Session = Depends(get_db
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
-@router.put("/produto/{id_produto}", response_model=ProdutoResponse, tags=["Produto"])
-async def put_produto(id_produto: int, produto_data: ProdutoUpdate, db: Session = Depends(get_db)):
+@router.put(
+    "/produto/{id_produto}",
+    response_model=ProdutoResponse,
+    tags=["Produto"],
+    summary="Atualizar produto - grupo 1"
+)
+async def put_produto(
+    id_produto: int,
+    produto_data: ProdutoUpdate,
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(require_group([1]))
+):
     try:
-        produto = db.query(ProdutoDB).filter(ProdutoDB.id_produto == id_produto).first()
+        produto = db.query(ProdutoDB).filter(
+            ProdutoDB.id_produto == id_produto
+        ).first()
 
         if not produto:
-            raise HTTPException(status_code=404, detail="Produto não encontrado")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Produto não encontrado"
+            )
 
         update_data = produto_data.model_dump(exclude_unset=True)
 
@@ -77,24 +152,48 @@ async def put_produto(id_produto: int, produto_data: ProdutoUpdate, db: Session 
 
         return produto
 
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
-@router.delete("/produto/{id_produto}", status_code=status.HTTP_204_NO_CONTENT, tags=["Produto"])
-async def delete_produto(id_produto: int, db: Session = Depends(get_db)):
+@router.delete(
+    "/produto/{id_produto}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Produto"],
+    summary="Excluir produto - grupo 1"
+)
+async def delete_produto(
+    id_produto: int,
+    db: Session = Depends(get_db),
+    current_user: FuncionarioAuth = Depends(require_group([1]))
+):
     try:
-        produto = db.query(ProdutoDB).filter(ProdutoDB.id_produto == id_produto).first()
+        produto = db.query(ProdutoDB).filter(
+            ProdutoDB.id_produto == id_produto
+        ).first()
 
         if not produto:
-            raise HTTPException(status_code=404, detail="Produto não encontrado")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Produto não encontrado"
+            )
 
         db.delete(produto)
         db.commit()
 
         return None
 
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
