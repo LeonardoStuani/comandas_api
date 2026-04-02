@@ -1,7 +1,10 @@
 #Leonardo Stuani Godoi
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from services.AuditoriaService import AuditoriaService
 from sqlalchemy.orm import Session
 from typing import List
+from infra.rate_limit import limiter, get_rate_limit
+from slowapi.errors import RateLimitExceeded
 
 # Domain Schemas
 from domain.schemas.FuncionarioSchema import (
@@ -26,9 +29,11 @@ router = APIRouter()
     response_model=List[FuncionarioResponse],
     tags=["Funcionário"],
     status_code=status.HTTP_200_OK,
-    summary="Listar todos os funcionários"
+    summary="Listar todos os funcionários - protegida por autenticação e grupo 1"
 )
+@limiter.limit(get_rate_limit("critical"))
 async def get_funcionarios(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: FuncionarioAuth = Depends(require_group([1]))
 ):
@@ -36,6 +41,8 @@ async def get_funcionarios(
     try:
         funcionarios = db.query(FuncionarioDB).all()
         return funcionarios
+    except RateLimitExceeded:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -106,7 +113,7 @@ async def post_funcionario(
 
         # Cria o novo funcionário
         novo_funcionario = FuncionarioDB(
-            id=None,  # Será auto-incrementado
+            id=None,
             nome=funcionario_data.nome,
             matricula=funcionario_data.matricula,
             cpf=funcionario_data.cpf,
@@ -118,6 +125,18 @@ async def post_funcionario(
         db.add(novo_funcionario)
         db.commit()
         db.refresh(novo_funcionario)
+
+        # Depois de tudo executado e antes do return, registra a ação na auditoria
+        AuditoriaService.registrar_acao(
+                db=db,
+                funcionario_id=current_user.id,
+                acao="CREATE",
+                recurso="FUNCIONARIO",
+                recurso_id=novo_funcionario.id,
+                dados_antigos=None,
+                dados_novos=novo_funcionario, # Objeto SQLAlchemy com dados novos
+                request=request # Request completo para capturar IP e user agent
+        )
 
         return novo_funcionario
 
@@ -170,6 +189,9 @@ async def put_funcionario(
         if funcionario_data.senha:
             funcionario_data.senha = get_password_hash(funcionario_data.senha)
 
+        # armazena uma copia do objeto com os dados atuais, para salvar na auditoria
+        dados_antigos_obj = funcionario
+
         # Atualiza apenas os campos fornecidos
         update_data = funcionario_data.model_dump(exclude_unset=True)
 
@@ -178,6 +200,18 @@ async def put_funcionario(
 
         db.commit()
         db.refresh(funcionario)
+
+        # Depois de tudo executado e antes do return, registra a ação na auditoria
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="UPDATE",
+            recurso="FUNCIONARIO",
+            recurso_id=funcionario.id,
+            dados_antigos=dados_antigos_obj, # Objeto SQLAlchemy com dados antigos
+            dados_novos=funcionario, # Objeto SQLAlchemy com dados novos
+            request=request # Request completo para capturar IP e user agent
+        )
 
         return funcionario
 
@@ -195,9 +229,11 @@ async def put_funcionario(
     "/funcionario/{id}",
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Funcionário"],
-    summary="Remover funcionário"
+    summary="Remover funcionário - protegida por autenticação e grupo 1"
 )
+@limiter.limit(get_rate_limit("critical"))
 async def delete_funcionario(
+    request: Request,
     id: int,
     db: Session = Depends(get_db),
     current_user: FuncionarioAuth = Depends(require_group([1]))
@@ -212,7 +248,6 @@ async def delete_funcionario(
                 detail="Funcionário não encontrado"
             )
 
-        # Impede que admin se auto-exclua
         if current_user.id == id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -222,8 +257,22 @@ async def delete_funcionario(
         db.delete(funcionario)
         db.commit()
 
+        # Depois de tudo executado e antes do return, registra a ação na auditoria
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="DELETE",
+            recurso="FUNCIONARIO",
+            recurso_id=funcionario.id,
+            dados_antigos=funcionario,
+            dados_novos=None,
+            request=request
+       )
+
         return None
 
+    except RateLimitExceeded:
+        raise
     except HTTPException:
         raise
     except Exception as e:
