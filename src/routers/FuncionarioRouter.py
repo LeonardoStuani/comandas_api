@@ -91,6 +91,7 @@ async def get_funcionario(
     summary="Criar novo funcionário"
 )
 async def post_funcionario(
+    request: Request,
     funcionario_data: FuncionarioCreate,
     db: Session = Depends(get_db),
     current_user: FuncionarioAuth = Depends(require_group([1]))
@@ -158,6 +159,7 @@ async def post_funcionario(
     summary="Atualizar funcionário"
 )
 async def put_funcionario(
+    request: Request,
     id: int,
     funcionario_data: FuncionarioUpdate,
     db: Session = Depends(get_db),

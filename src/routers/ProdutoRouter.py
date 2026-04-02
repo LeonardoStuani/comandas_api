@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
+from services.AuditoriaService import AuditoriaService
 
 from domain.schemas.ProdutoSchema import (
     ProdutoCreate,
@@ -93,6 +94,7 @@ async def get_produto(
     summary="Criar produto - grupo 1"
 )
 async def post_produto(
+    request: Request,
     produto_data: ProdutoCreate,
     db: Session = Depends(get_db),
     current_user: FuncionarioAuth = Depends(require_group([1]))
@@ -108,6 +110,17 @@ async def post_produto(
         db.add(novo_produto)
         db.commit()
         db.refresh(novo_produto)
+
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="CREATE",
+            recurso="PRODUTO",
+            recurso_id=novo_produto.id_produto,
+            dados_antigos=None,
+            dados_novos=novo_produto,
+            request=request
+        )
 
         return novo_produto
 
@@ -126,6 +139,7 @@ async def post_produto(
     summary="Atualizar produto - grupo 1"
 )
 async def put_produto(
+    request: Request,
     id_produto: int,
     produto_data: ProdutoUpdate,
     db: Session = Depends(get_db),
@@ -142,6 +156,11 @@ async def put_produto(
                 detail="Produto não encontrado"
             )
 
+        dados_antigos = {
+            column.name: getattr(produto, column.name)
+            for column in produto.__table__.columns
+        }
+
         update_data = produto_data.model_dump(exclude_unset=True)
 
         for field, value in update_data.items():
@@ -149,6 +168,17 @@ async def put_produto(
 
         db.commit()
         db.refresh(produto)
+
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="UPDATE",
+            recurso="PRODUTO",
+            recurso_id=produto.id_produto,
+            dados_antigos=dados_antigos,
+            dados_novos=produto,
+            request=request
+        )
 
         return produto
 
@@ -169,6 +199,7 @@ async def put_produto(
     summary="Excluir produto - grupo 1"
 )
 async def delete_produto(
+    request: Request,
     id_produto: int,
     db: Session = Depends(get_db),
     current_user: FuncionarioAuth = Depends(require_group([1]))
@@ -184,8 +215,24 @@ async def delete_produto(
                 detail="Produto não encontrado"
             )
 
+        dados_antigos = {
+            column.name: getattr(produto, column.name)
+            for column in produto.__table__.columns
+        }
+
         db.delete(produto)
         db.commit()
+
+        AuditoriaService.registrar_acao(
+            db=db,
+            funcionario_id=current_user.id,
+            acao="DELETE",
+            recurso="PRODUTO",
+            recurso_id=id_produto,
+            dados_antigos=dados_antigos,
+            dados_novos=None,
+            request=request
+        )
 
         return None
 
