@@ -1,5 +1,7 @@
+# Leonardo Stuani Godoi
 from infra import database
 from sqlalchemy import Column, VARCHAR, Integer, BLOB, Numeric
+
 
 class ProdutoDB(database.Base):
     __tablename__ = "tb_produto"

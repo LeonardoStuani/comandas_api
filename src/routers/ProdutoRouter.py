@@ -1,13 +1,10 @@
+# Leonardo Stuani Godoi
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
 from services.AuditoriaService import AuditoriaService
 
-from domain.schemas.ProdutoSchema import (
-    ProdutoCreate,
-    ProdutoUpdate,
-    ProdutoResponse
-)
+from domain.schemas.ProdutoSchema import ProdutoCreate, ProdutoUpdate, ProdutoResponse
 from domain.schemas.AuthSchema import FuncionarioAuth
 
 from infra.orm.ProdutoModel import ProdutoDB
@@ -20,25 +17,20 @@ router = APIRouter()
 @router.get(
     "/produto/publico",
     tags=["Produto"],
-    summary="Listar produtos - rota pública - sem id e valor"
+    summary="Listar produtos - rota pública - sem id e valor",
 )
 async def get_produtos_publicos(db: Session = Depends(get_db)):
     try:
         produtos = db.query(ProdutoDB).all()
 
         return [
-            {
-                "nome": produto.nome,
-                "descricao": produto.descricao,
-                "foto": produto.foto
-            }
+            {"nome": produto.nome, "descricao": produto.descricao, "foto": produto.foto}
             for produto in produtos
         ]
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
 
@@ -46,19 +38,18 @@ async def get_produtos_publicos(db: Session = Depends(get_db)):
     "/produto/",
     response_model=List[ProdutoResponse],
     tags=["Produto"],
-    summary="Listar todos os produtos - protegida"
+    summary="Listar todos os produtos - protegida",
 )
 async def get_produtos(
     db: Session = Depends(get_db),
-    current_user: FuncionarioAuth = Depends(get_current_active_user)
+    current_user: FuncionarioAuth = Depends(get_current_active_user),
 ):
     try:
         produtos = db.query(ProdutoDB).all()
         return produtos
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
 
@@ -66,21 +57,18 @@ async def get_produtos(
     "/produto/{id_produto}",
     response_model=ProdutoResponse,
     tags=["Produto"],
-    summary="Buscar produto por ID - protegida"
+    summary="Buscar produto por ID - protegida",
 )
 async def get_produto(
     id_produto: int,
     db: Session = Depends(get_db),
-    current_user: FuncionarioAuth = Depends(get_current_active_user)
+    current_user: FuncionarioAuth = Depends(get_current_active_user),
 ):
-    produto = db.query(ProdutoDB).filter(
-        ProdutoDB.id_produto == id_produto
-    ).first()
+    produto = db.query(ProdutoDB).filter(ProdutoDB.id_produto == id_produto).first()
 
     if not produto:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Produto não encontrado"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado"
         )
 
     return produto
@@ -91,20 +79,20 @@ async def get_produto(
     response_model=ProdutoResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["Produto"],
-    summary="Criar produto - grupo 1"
+    summary="Criar produto - grupo 1",
 )
 async def post_produto(
     request: Request,
     produto_data: ProdutoCreate,
     db: Session = Depends(get_db),
-    current_user: FuncionarioAuth = Depends(require_group([1]))
+    current_user: FuncionarioAuth = Depends(require_group([1])),
 ):
     try:
         novo_produto = ProdutoDB(
             nome=produto_data.nome,
             descricao=produto_data.descricao,
             foto=produto_data.foto,
-            valor_unitario=produto_data.valor_unitario
+            valor_unitario=produto_data.valor_unitario,
         )
 
         db.add(novo_produto)
@@ -119,7 +107,7 @@ async def post_produto(
             recurso_id=novo_produto.id_produto,
             dados_antigos=None,
             dados_novos=novo_produto,
-            request=request
+            request=request,
         )
 
         return novo_produto
@@ -127,8 +115,7 @@ async def post_produto(
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
 
@@ -136,24 +123,21 @@ async def post_produto(
     "/produto/{id_produto}",
     response_model=ProdutoResponse,
     tags=["Produto"],
-    summary="Atualizar produto - grupo 1"
+    summary="Atualizar produto - grupo 1",
 )
 async def put_produto(
     request: Request,
     id_produto: int,
     produto_data: ProdutoUpdate,
     db: Session = Depends(get_db),
-    current_user: FuncionarioAuth = Depends(require_group([1]))
+    current_user: FuncionarioAuth = Depends(require_group([1])),
 ):
     try:
-        produto = db.query(ProdutoDB).filter(
-            ProdutoDB.id_produto == id_produto
-        ).first()
+        produto = db.query(ProdutoDB).filter(ProdutoDB.id_produto == id_produto).first()
 
         if not produto:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado"
             )
 
         dados_antigos = {
@@ -177,7 +161,7 @@ async def put_produto(
             recurso_id=produto.id_produto,
             dados_antigos=dados_antigos,
             dados_novos=produto,
-            request=request
+            request=request,
         )
 
         return produto
@@ -187,8 +171,7 @@ async def put_produto(
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
 
@@ -196,23 +179,20 @@ async def put_produto(
     "/produto/{id_produto}",
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Produto"],
-    summary="Excluir produto - grupo 1"
+    summary="Excluir produto - grupo 1",
 )
 async def delete_produto(
     request: Request,
     id_produto: int,
     db: Session = Depends(get_db),
-    current_user: FuncionarioAuth = Depends(require_group([1]))
+    current_user: FuncionarioAuth = Depends(require_group([1])),
 ):
     try:
-        produto = db.query(ProdutoDB).filter(
-            ProdutoDB.id_produto == id_produto
-        ).first()
+        produto = db.query(ProdutoDB).filter(ProdutoDB.id_produto == id_produto).first()
 
         if not produto:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Produto não encontrado"
             )
 
         dados_antigos = {
@@ -231,7 +211,7 @@ async def delete_produto(
             recurso_id=id_produto,
             dados_antigos=dados_antigos,
             dados_novos=None,
-            request=request
+            request=request,
         )
 
         return None
@@ -241,6 +221,5 @@ async def delete_produto(
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )

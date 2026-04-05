@@ -1,3 +1,4 @@
+# Leonardo Stuani Godoi
 from sqlalchemy.orm import Session
 from fastapi import Request
 from typing import Optional, Dict, Any
@@ -18,7 +19,7 @@ class AuditoriaService:
         recurso_id: Optional[int] = None,
         dados_antigos: Optional[Dict[str, Any]] = None,
         dados_novos: Optional[Dict[str, Any]] = None,
-        request: Optional[Request] = None
+        request: Optional[Request] = None,
     ) -> bool:
         try:
             # Capturar informações da requisição
@@ -38,7 +39,7 @@ class AuditoriaService:
 
             # dados_novos - Converter objeto SQLAlchemy para dicionário antes de serializar
             if dados_novos:
-                if hasattr(dados_novos, '__dict__'):
+                if hasattr(dados_novos, "__dict__"):
                     # É um objeto SQLAlchemy, converter para dicionário
                     dados_novos_dict = {
                         column.name: getattr(dados_novos, column.name)
@@ -53,7 +54,7 @@ class AuditoriaService:
 
             # dados_antigos - Converter objeto SQLAlchemy para dicionário antes de serializar
             if dados_antigos:
-                if hasattr(dados_antigos, '__dict__'):
+                if hasattr(dados_antigos, "__dict__"):
                     # É um objeto SQLAlchemy, converter para dicionário
                     dados_antigos_dict = {
                         column.name: getattr(dados_antigos, column.name)
@@ -76,7 +77,7 @@ class AuditoriaService:
                 dados_novos=dados_novos_json,
                 ip_address=ip_address,
                 user_agent=user_agent,
-                data_hora=datetime.now()
+                data_hora=datetime.now(),
             )
 
             db.add(auditoria)

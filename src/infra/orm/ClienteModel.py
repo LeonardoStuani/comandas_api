@@ -1,9 +1,11 @@
+# Leonardo Stuani Godoi
 from infra import database
 from sqlalchemy import Column, VARCHAR, CHAR, Integer
 
+
 # ORM
 class ClienteDB(database.Base):
-    __tablename__ = 'tb_cliente'
+    __tablename__ = "tb_cliente"
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     nome = Column(VARCHAR(100), nullable=False)

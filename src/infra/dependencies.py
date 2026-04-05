@@ -1,3 +1,4 @@
+# Leonardo Stuani Godoi
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -13,7 +14,7 @@ security = HTTPBearer()
 # Dependency para validar token e retornar usuário atual
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> FuncionarioAuth:
     """Dependency que valida o token e retorna o usuário atual"""
 
@@ -32,9 +33,7 @@ def get_current_user(
 
     # Busca o funcionário no banco
     funcionario = (
-        db.query(FuncionarioDB)
-        .filter(FuncionarioDB.id == id_funcionario)
-        .first()
+        db.query(FuncionarioDB).filter(FuncionarioDB.id == id_funcionario).first()
     )
 
     if not funcionario:
@@ -57,13 +56,13 @@ def get_current_user(
         nome=funcionario.nome,
         matricula=funcionario.matricula,
         cpf=funcionario.cpf,
-        grupo=funcionario.grupo
+        grupo=funcionario.grupo,
     )
 
 
 # Dependency para verificar se o usuário está ativo
 def get_current_active_user(
-    current_user: FuncionarioAuth = Depends(get_current_user)
+    current_user: FuncionarioAuth = Depends(get_current_user),
 ) -> FuncionarioAuth:
     """Dependency que verifica se o usuário está ativo (pode ser expandida)"""
     # Aqui você pode adicionar lógica para verificar se o usuário está ativo
@@ -86,7 +85,7 @@ def require_group(group_required: list[int] = None):
     """
 
     def check_group(
-        current_user: FuncionarioAuth = Depends(get_current_active_user)
+        current_user: FuncionarioAuth = Depends(get_current_active_user),
     ) -> FuncionarioAuth:
 
         # Se group_required for None, permite qualquer usuário autenticado
@@ -98,7 +97,7 @@ def require_group(group_required: list[int] = None):
             groups_str = ", ".join(map(str, group_required))
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permissão negada - requerido um dos grupos: {groups_str}"
+                detail=f"Permissão negada - requerido um dos grupos: {groups_str}",
             )
 
         return current_user

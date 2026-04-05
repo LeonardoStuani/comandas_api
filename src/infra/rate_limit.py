@@ -1,3 +1,4 @@
+# Leonardo Stuani Godoi
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -11,6 +12,7 @@ load_dotenv()
 
 # Criar limiter com base no IP do cliente
 limiter = Limiter(key_func=get_remote_address)
+
 
 # Handler personalizado para exceção de rate limit
 def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
@@ -34,16 +36,19 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
     response = Response(
         content=f'{{"error": "Rate limit exceeded", "message": "Too many requests. Limit: {exc.detail}", "retry_after": {retry_after}, "timestamp": "{datetime.now(timezone.utc).isoformat()}"}}',
         status_code=429,
-        media_type="application/json"
+        media_type="application/json",
     )
 
     # Adiciona headers informativos
     response.headers["X-RateLimit-Limit"] = str(exc.detail)
     response.headers["X-RateLimit-Remaining"] = "0"
-    response.headers["X-RateLimit-Reset"] = str(int(datetime.now(timezone.utc).timestamp()) + retry_after)
+    response.headers["X-RateLimit-Reset"] = str(
+        int(datetime.now(timezone.utc).timestamp()) + retry_after
+    )
     response.headers["Retry-After"] = str(retry_after)
 
     return response
+
 
 # Configuração de limites por perfil (carregados do .env)
 RATE_LIMITS = {
@@ -52,8 +57,9 @@ RATE_LIMITS = {
     "moderate": os.getenv("RATE_LIMIT_MODERATE", "100/minute"),  # Moderado
     "low": os.getenv("RATE_LIMIT_LOW", "200/minute"),  # Baixo
     "light": os.getenv("RATE_LIMIT_LIGHT", "300/minute"),  # Leve
-    "default": os.getenv("RATE_LIMIT_DEFAULT", "50/minute")  # Padrão
+    "default": os.getenv("RATE_LIMIT_DEFAULT", "50/minute"),  # Padrão
 }
+
 
 # Retorna o rate limit para um tipo de endpoint
 def get_rate_limit(endpoint_type: str) -> str:

@@ -1,3 +1,4 @@
+# Leonardo Stuani Godoi
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -13,9 +14,11 @@ Session = sessionmaker(bind=engine, autocommit=False, autoflush=True)
 # para trabalhar com tabelas
 Base = declarative_base()
 
+
 # cria, caso não existam, as tabelas de todos os modelos que encontrar na aplicação (importados)
 async def cria_tabelas():
     Base.metadata.create_all(engine)
+
 
 # dependência para injetar a sessão do banco de dados nas rotas
 def get_db():

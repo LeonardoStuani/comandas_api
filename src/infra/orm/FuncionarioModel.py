@@ -1,9 +1,11 @@
+# Leonardo Stuani Godoi
 from infra import database
 from sqlalchemy import Column, VARCHAR, CHAR, Integer
 
+
 # ORM
 class FuncionarioDB(database.Base):
-    __tablename__ = 'tb_funcionario'
+    __tablename__ = "tb_funcionario"
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     nome = Column(VARCHAR(100), nullable=False)
     matricula = Column(CHAR(10), nullable=False)
