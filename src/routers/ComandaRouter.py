@@ -82,7 +82,8 @@ async def get_comanda(
                 id=cliente.id,
                 nome=cliente.nome,
                 cpf=cliente.cpf,
-                telefone=cliente.telefone
+                telefone=cliente.telefone,
+                endereco=cliente.endereco
             ) if cliente else None
         )
 
@@ -196,7 +197,8 @@ async def get_comandas(
                     id=cliente.id,
                     nome=cliente.nome,
                     cpf=cliente.cpf,
-                    telefone=cliente.telefone
+                    telefone=cliente.telefone,
+                    endereco=cliente.endereco
                 ) if cliente else None
             )
             comandas_response.append(comanda_response)
@@ -560,7 +562,8 @@ async def cancelar_comanda(
                 id=cliente.id,
                 nome=cliente.nome,
                 cpf=cliente.cpf,
-                telefone=cliente.telefone
+                telefone=cliente.telefone,
+                endereco=cliente.endereco
             ) if cliente else None
         )
 

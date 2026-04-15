@@ -11,7 +11,7 @@ class AuditoriaService:
     """Serviço para registrar auditoria de acessos e ações"""
 
     @staticmethod
-    def registrar_acao(
+    async def registrar_acao(
         db: Session,
         funcionario_id: int,
         acao: str,
@@ -81,7 +81,8 @@ class AuditoriaService:
             )
 
             db.add(auditoria)
-            db.commit()
+            await db.commit()
+            await db.refresh(auditoria)
 
             return True
 
