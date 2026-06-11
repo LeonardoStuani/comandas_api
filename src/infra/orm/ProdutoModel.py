@@ -17,3 +17,4 @@ class ProdutoDB(database.Base):
         self.descricao = descricao
         self.foto = foto
         self.valor_unitario = valor_unitario
+

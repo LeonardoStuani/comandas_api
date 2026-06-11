@@ -9,3 +9,10 @@ pyvenv.cfg
 .idea
 .vscode
 comandas_db.db
+cert/
+
+# Variaveis de ambiente / segredos - NUNCA commitar
+.env
+**/.env
+*.env
+!.env.example
