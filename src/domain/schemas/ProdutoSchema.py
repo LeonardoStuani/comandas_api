@@ -22,4 +22,5 @@ class ProdutoResponse(BaseModel):
     id_produto: int
     nome: str
     descricao: str
+    foto: Optional[bytes] = None
     valor_unitario: Decimal
